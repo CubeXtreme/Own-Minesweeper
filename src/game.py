@@ -1,7 +1,6 @@
 # src/game.py
 
 import random
-import pygame
 
 # Definir CELL_SIZE globalmente
 CELL_SIZE = 40
@@ -44,15 +43,18 @@ class Board:
                 self.grid[row][col].adjacent_mines = count
 
     def reveal_cell(self, row, col):
+        revealed = []
         cell = self.grid[row][col]
         if cell.is_revealed or cell.is_marked:
-            return
+            return revealed
         cell.is_revealed = True
+        revealed.append((row, col))
         if cell.adjacent_mines == 0 and not cell.has_mine:
             for r in range(max(0, row-1), min(self.rows, row+2)):
                 for c in range(max(0, col-1), min(self.cols, col+2)):
                     if not self.grid[r][c].is_revealed:
-                        self.reveal_cell(r, c)
+                        revealed += self.reveal_cell(r, c)
+        return revealed
 
     def toggle_mark_cell(self, row, col):
         cell = self.grid[row][col]
@@ -66,54 +68,3 @@ class Board:
                 if not cell.has_mine and not cell.is_revealed:
                     return False
         return True
-
-    def reveal_cell_with_animation(self, row, col, screen, last_update_time):
-        """
-        Revela una celda con una animación de desvanecimiento usando un enfoque basado en tiempo.
-        """
-        cell = self.grid[row][col]
-        if cell.is_revealed or cell.is_marked:
-            return last_update_time
-        cell.is_revealed = True
-
-        # Definir colores para la animación
-        REVEAL_COLOR = (180, 180, 180)  # Gris claro
-        ANIMATION_STEPS = 10
-        ANIMATION_DURATION = 300  # Milisegundos totales para la animación
-        step_duration = ANIMATION_DURATION / ANIMATION_STEPS
-
-        # Calcular el tiempo para la siguiente actualización
-        current_time = pygame.time.get_ticks()
-        if last_update_time is None:
-            last_update_time = current_time
-
-        elapsed = current_time - last_update_time
-        if elapsed < step_duration:
-            return last_update_time  # Esperar al siguiente paso
-
-        # Calcular el paso actual de la animación
-        step = int(elapsed / step_duration)
-        if step > ANIMATION_STEPS:
-            step = ANIMATION_STEPS
-
-        alpha = int((step / ANIMATION_STEPS) * 255)
-        temp_surface = pygame.Surface((CELL_SIZE, CELL_SIZE))
-        temp_surface.set_alpha(alpha)
-        temp_surface.fill(REVEAL_COLOR)
-
-        rect = pygame.Rect(col * CELL_SIZE, row * CELL_SIZE + 50, CELL_SIZE, CELL_SIZE)  # +50 para interfaz
-        screen.blit(temp_surface, rect.topleft)
-
-        pygame.display.update(rect)  # Actualizar solo la celda actual
-
-        last_update_time = current_time
-
-        # Si la celda tiene 0 minas adyacentes, revelar recursivamente
-        if cell.adjacent_mines == 0 and not cell.has_mine:
-            for r in range(max(0, row-1), min(self.rows, row+2)):
-                for c in range(max(0, col-1), min(self.cols, col+2)):
-                    neighbor = self.grid[r][c]
-                    if not neighbor.is_revealed and not neighbor.has_mine:
-                        last_update_time = self.reveal_cell_with_animation(r, c, screen, last_update_time)
-
-        return last_update_time

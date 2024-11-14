@@ -5,9 +5,6 @@ import sys
 import time
 from game import Board, CELL_SIZE  # Importar CELL_SIZE desde game.py
 
-# Definir CELL_SIZE globalmente
-# CELL_SIZE ya está definido en game.py y se importa aquí
-
 # Colores
 PALETTE = {
     "background": (25, 25, 25),        # Negro muy oscuro
@@ -46,7 +43,7 @@ def get_remaining_mines(board):
 
 def display_difficulty_menu(screen, font_large, font_medium):
     """Muestra el menú para seleccionar la dificultad del juego."""
-    screen.fill(PALETTE["background"])  # Limpiar la pantalla antes de dibujar
+    # No llenar la pantalla aquí para mantener la imagen de fondo
     title_text = font_large.render("Selecciona la Dificultad", True, PALETTE["text"])
     screen.blit(title_text, title_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2 - 100)))
     
@@ -207,6 +204,13 @@ def main():
     elapsed_time = 0
     clock = pygame.time.Clock()
 
+    # Lista de celdas para animar
+    animation_cells = []  # Cada elemento es un diccionario: {'row': r, 'col': c, 'step': s, 'start_time': t}
+
+    # Parámetros de animación
+    ANIMATION_STEPS = 10
+    ANIMATION_DURATION = 300  # Milisegundos totales para la animación
+
     # Bucle principal del juego
     while True:
         clock.tick(60)  # 60 FPS para una animación más suave
@@ -218,13 +222,16 @@ def main():
                 x, y = pygame.mouse.get_pos()
                 if board is None:
                     # Manejar selección de dificultad
-                    for button_rect, difficulty in display_difficulty_menu(screen, font_large, font_medium):
+                    buttons = display_difficulty_menu(screen, font_large, font_medium)
+                    for button_rect, difficulty in buttons:
                         if button_rect.collidepoint(x, y):
                             current_difficulty = difficulty
                             params = DIFFICULTIES[difficulty]
                             board = Board(params["rows"], params["cols"], params["mines"])
                             start_time = pygame.time.get_ticks()
                             game_over = False
+                            # Limpiar cualquier animación existente
+                            animation_cells = []
                             break
                 else:
                     # Manejar clics en el tablero o en el botón de reiniciar
@@ -235,6 +242,7 @@ def main():
                         game_over = False
                         start_time = pygame.time.get_ticks()
                         elapsed_time = 0
+                        animation_cells = []
                     else:
                         # Ajustar coordenadas según interfaz (50 píxeles reservados para información)
                         col = x // CELL_SIZE
@@ -243,7 +251,10 @@ def main():
                             if event.button == 1:  # Clic izquierdo
                                 if reveal_sound:
                                     reveal_sound.play()
-                                last_update_time = board.reveal_cell_with_animation(row, col, screen, None)
+                                revealed_cells = board.reveal_cell(row, col)
+                                # Agregar celdas reveladas a la lista de animaciones
+                                for (r, c) in revealed_cells:
+                                    animation_cells.append({'row': r, 'col': c, 'step': 0, 'start_time': pygame.time.get_ticks()})
                                 if board.grid[row][col].has_mine:
                                     if mine_sound:
                                         mine_sound.play()
@@ -276,6 +287,31 @@ def main():
             draw_grid(screen, board, mine_image, flag_image, font_small)
             draw_restart_button(screen, font_small)
             draw_info(screen, board, elapsed_time, font_small)
+
+            # Manejar animaciones
+            cells_to_remove = []
+            for cell in animation_cells:
+                # Calcular el progreso de la animación
+                elapsed = pygame.time.get_ticks() - cell['start_time']
+                progress = min(elapsed / ANIMATION_DURATION, 1.0)
+                alpha = int(progress * 255)
+                
+                # Crear una superficie temporal con transparencia
+                temp_surface = pygame.Surface((CELL_SIZE, CELL_SIZE))
+                temp_surface.set_alpha(alpha)
+                temp_surface.fill(PALETTE["cell_revealed"])
+                
+                # Dibujar la superficie sobre la celda correspondiente
+                rect = pygame.Rect(cell['col'] * CELL_SIZE, cell['row'] * CELL_SIZE + 50, CELL_SIZE, CELL_SIZE)  # +50 para interfaz
+                screen.blit(temp_surface, rect.topleft)
+                
+                # Verificar si la animación está completa
+                if progress >= 1.0:
+                    cells_to_remove.append(cell)
+            
+            # Eliminar celdas cuya animación ha terminado
+            for cell in cells_to_remove:
+                animation_cells.remove(cell)
 
             # Mensajes de fin de juego
             if game_over:
