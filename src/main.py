@@ -3,7 +3,10 @@
 import pygame
 import sys
 import time
-from game import Board
+from game import Board, CELL_SIZE  # Importar CELL_SIZE desde game.py
+
+# Definir CELL_SIZE globalmente
+# CELL_SIZE ya está definido en game.py y se importa aquí
 
 # Colores
 PALETTE = {
@@ -31,10 +34,6 @@ DIFFICULTIES = {
     "Difícil": {"rows": 16, "cols": 30, "mines": 99}
 }
 
-# Ubicaciones de los textos
-MINES_TEXT_POS = (10, 0)  # Ajustados según la pantalla
-TIMER_TEXT_POS = (0, 0)   # Ajustados según la pantalla
-
 # Botón de reiniciar
 RESTART_BUTTON_RECT = pygame.Rect(0, 0, 100, 40)  # Posición dinámica
 RESTART_COLOR = (70, 130, 180)  # Azul acero
@@ -47,6 +46,7 @@ def get_remaining_mines(board):
 
 def display_difficulty_menu(screen, font_large, font_medium):
     """Muestra el menú para seleccionar la dificultad del juego."""
+    screen.fill(PALETTE["background"])  # Limpiar la pantalla antes de dibujar
     title_text = font_large.render("Selecciona la Dificultad", True, PALETTE["text"])
     screen.blit(title_text, title_text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2 - 100)))
     
@@ -77,11 +77,11 @@ def draw_info(screen, board, elapsed_time, font):
     # Minas restantes
     mines_remaining = get_remaining_mines(board)
     mines_text = font.render(f"Mines: {mines_remaining}", True, PALETTE["text"])
-    screen.blit(mines_text, MINES_TEXT_POS)
+    screen.blit(mines_text, (10, screen.get_height() - 90))
     
     # Temporizador
     timer_text = font.render(f"Time: {elapsed_time} s", True, PALETTE["text"])
-    screen.blit(timer_text, TIMER_TEXT_POS)
+    screen.blit(timer_text, (screen.get_width() - 160, screen.get_height() - 90))
 
 def render_text_with_shadow(screen, text, font, text_color, shadow_color, position, shadow_offset=(2, 2)):
     """Renderiza texto con una sombra para mejorar la legibilidad."""
@@ -118,6 +118,87 @@ def main():
     pygame.init()
     pygame.display.set_caption("Buscaminas")
 
+    # Definir el tamaño de la pantalla basado en la máxima dificultad
+    max_rows = max(params["rows"] for params in DIFFICULTIES.values())
+    max_cols = max(params["cols"] for params in DIFFICULTIES.values())
+    WIDTH = max_cols * CELL_SIZE
+    HEIGHT = max_rows * CELL_SIZE + 100  # +100 para la interfaz y botones
+
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+    # Cargar fuentes
+    try:
+        font_large = pygame.font.Font(FONT_PATH, 48)
+    except pygame.error as e:
+        font_large = pygame.font.SysFont(None, 48)  # Fallback a la fuente predeterminada
+        print(f"No se pudo cargar la fuente grande: {e}")
+    try:
+        font_medium = pygame.font.Font(FONT_PATH, 36)
+    except pygame.error as e:
+        font_medium = pygame.font.SysFont(None, 36)  # Fallback a la fuente predeterminada
+        print(f"No se pudo cargar la fuente mediana: {e}")
+    try:
+        font_small = pygame.font.Font(FONT_PATH, 24)
+    except pygame.error as e:
+        font_small = pygame.font.SysFont(None, 24)  # Fallback a la fuente predeterminada
+        print(f"No se pudo cargar la fuente pequeña: {e}")
+
+    # Cargar y establecer el icono de la ventana
+    try:
+        icon = pygame.image.load(ICON_PATH)
+        pygame.display.set_icon(icon)
+    except pygame.error as e:
+        print(f"No se pudo cargar el icono de la ventana: {e}")
+
+    # Cargar y escalar la imagen de fondo
+    try:
+        background = pygame.image.load(BACKGROUND_IMAGE_PATH)
+        background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+    except pygame.error as e:
+        background = None
+        print(f"No se pudo cargar la imagen de fondo: {e}")
+
+    # Cargar y escalar imágenes de mina y bandera
+    try:
+        mine_image = pygame.image.load(MINE_IMAGE_PATH)
+        mine_image = pygame.transform.scale(mine_image, (CELL_SIZE, CELL_SIZE))
+    except pygame.error as e:
+        mine_image = None
+        print(f"No se pudo cargar la imagen de la mina: {e}")
+    
+    try:
+        flag_image = pygame.image.load(FLAG_IMAGE_PATH)
+        flag_image = pygame.transform.scale(flag_image, (CELL_SIZE, CELL_SIZE))
+    except pygame.error as e:
+        flag_image = None
+        print(f"No se pudo cargar la imagen de la bandera: {e}")
+
+    # Cargar sonidos
+    try:
+        reveal_sound = pygame.mixer.Sound("src/sounds/reveal.wav")
+    except pygame.error as e:
+        reveal_sound = None
+        print(f"No se pudo cargar el sonido de revelación: {e}")
+    
+    try:
+        mine_sound = pygame.mixer.Sound("src/sounds/mine.wav")
+    except pygame.error as e:
+        mine_sound = None
+        print(f"No se pudo cargar el sonido de mina: {e}")
+    
+    try:
+        flag_sound = pygame.mixer.Sound("src/sounds/flag.wav")
+    except pygame.error as e:
+        flag_sound = None
+        print(f"No se pudo cargar el sonido de bandera: {e}")
+
+    # Cargar música de fondo
+    try:
+        pygame.mixer.music.load("src/sounds/background_music.mp3")
+        pygame.mixer.music.play(-1)  # -1 para repetir indefinidamente
+    except pygame.error as e:
+        print(f"No se pudo cargar la música de fondo: {e}")
+
     # Inicializar variables
     current_difficulty = None
     board = None
@@ -126,171 +207,76 @@ def main():
     elapsed_time = 0
     clock = pygame.time.Clock()
 
-    # Cargar fuentes
-    try:
-        font_large = pygame.font.Font(FONT_PATH, 48)
-    except:
-        font_large = pygame.font.SysFont(None, 48)  # Fallback a la fuente predeterminada
-    try:
-        font_medium = pygame.font.Font(FONT_PATH, 36)
-    except:
-        font_medium = pygame.font.SysFont(None, 36)  # Fallback a la fuente predeterminada
-    try:
-        font_small = pygame.font.Font(FONT_PATH, 24)
-    except:
-        font_small = pygame.font.SysFont(None, 24)  # Fallback a la fuente predeterminada
-
-    # Cargar y establecer el icono de la ventana
-    try:
-        icon = pygame.image.load(ICON_PATH)
-        pygame.display.set_icon(icon)
-    except:
-        print("No se pudo cargar el icono de la ventana.")
-
-    # Cargar y escalar la imagen de fondo
-    try:
-        background = pygame.image.load(BACKGROUND_IMAGE_PATH)
-    except:
-        background = None
-        print("No se pudo cargar la imagen de fondo.")
-
-    # Cargar y escalar imágenes de mina y bandera
-    try:
-        mine_image = pygame.image.load(MINE_IMAGE_PATH)
-        mine_image = pygame.transform.scale(mine_image, (40, 40))  # Ajusta según CELL_SIZE
-    except:
-        mine_image = None
-        print("No se pudo cargar la imagen de la mina.")
-    
-    try:
-        flag_image = pygame.image.load(FLAG_IMAGE_PATH)
-        flag_image = pygame.transform.scale(flag_image, (40, 40))  # Ajusta según CELL_SIZE
-    except:
-        flag_image = None
-        print("No se pudo cargar la imagen de la bandera.")
-    
-    # Cargar sonidos
-    try:
-        reveal_sound = pygame.mixer.Sound("src/sounds/reveal.wav")
-    except:
-        reveal_sound = None
-        print("No se pudo cargar el sonido de revelación.")
-    
-    try:
-        mine_sound = pygame.mixer.Sound("src/sounds/mine.wav")
-    except:
-        mine_sound = None
-        print("No se pudo cargar el sonido de mina.")
-    
-    try:
-        flag_sound = pygame.mixer.Sound("src/sounds/flag.wav")
-    except:
-        flag_sound = None
-        print("No se pudo cargar el sonido de bandera.")
-    
-    # Cargar música de fondo
-    try:
-        pygame.mixer.music.load("src/sounds/background_music.mp3")
-        pygame.mixer.music.play(-1)  # -1 para repetir indefinidamente
-    except:
-        print("No se pudo cargar la música de fondo.")
-    
-    # Bucle principal
+    # Bucle principal del juego
     while True:
-        if board is None:
-            # Selección de dificultad
-            # Definir el tamaño de la pantalla basado en la máxima dificultad
-            max_rows = max(params["rows"] for params in DIFFICULTIES.values())
-            max_cols = max(params["cols"] for params in DIFFICULTIES.values())
-            CELL_SIZE = 40
-            WIDTH = max_cols * CELL_SIZE
-            HEIGHT = max_rows * CELL_SIZE + 100  # +100 para la interfaz y botones
-
-            screen = pygame.display.set_mode((WIDTH, HEIGHT))
-            
-            # Dibujar el fondo
-            if background:
-                background_scaled = pygame.transform.scale(background, (WIDTH, HEIGHT))
-                screen.blit(background_scaled, (0, 0))
-            else:
-                screen.fill(PALETTE["background"])
-            
-            # Dibujar el menú de dificultad
-            buttons = display_difficulty_menu(screen, font_large, font_medium)
-            pygame.display.flip()
-            
-            # Manejar eventos para selección de dificultad
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = pygame.mouse.get_pos()
-                    for button_rect, difficulty in buttons:
+        clock.tick(60)  # 60 FPS para una animación más suave
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if board is None:
+                    # Manejar selección de dificultad
+                    for button_rect, difficulty in display_difficulty_menu(screen, font_large, font_medium):
                         if button_rect.collidepoint(x, y):
                             current_difficulty = difficulty
                             params = DIFFICULTIES[difficulty]
                             board = Board(params["rows"], params["cols"], params["mines"])
-                            start_time = time.time()
+                            start_time = pygame.time.get_ticks()
+                            game_over = False
                             break
-
-        else:
-            # Bucle del juego
-            clock.tick(30)  # 30 FPS
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
-                    x, y = pygame.mouse.get_pos()
-                    # Ajustar coordenadas según interfaz
-                    col = x // CELL_SIZE
-                    row = (y - 50) // CELL_SIZE  # 50 píxeles reservados para la interfaz
-                    if 0 <= row < board.rows and 0 <= col < board.cols:
-                        if event.button == 1:  # Clic izquierdo
-                            if reveal_sound:
-                                reveal_sound.play()
-                            board.reveal_cell_with_animation(row, col, screen)
-                            if board.grid[row][col].has_mine:
-                                if mine_sound:
-                                    mine_sound.play()
-                                game_over = True
-                        elif event.button == 3:  # Clic derecho
-                            board.toggle_mark_cell(row, col)
-                            if flag_sound:
-                                flag_sound.play()
-                
-                # Manejar el botón de reiniciar
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    x, y = event.pos
+                else:
+                    # Manejar clics en el tablero o en el botón de reiniciar
                     if RESTART_BUTTON_RECT.collidepoint(x, y):
                         # Reiniciar el juego con la misma dificultad
                         params = DIFFICULTIES[current_difficulty]
                         board = Board(params["rows"], params["cols"], params["mines"])
                         game_over = False
-                        start_time = time.time()
+                        start_time = pygame.time.get_ticks()
                         elapsed_time = 0
+                    else:
+                        # Ajustar coordenadas según interfaz (50 píxeles reservados para información)
+                        col = x // CELL_SIZE
+                        row = (y - 50) // CELL_SIZE
+                        if 0 <= row < board.rows and 0 <= col < board.cols:
+                            if event.button == 1:  # Clic izquierdo
+                                if reveal_sound:
+                                    reveal_sound.play()
+                                last_update_time = board.reveal_cell_with_animation(row, col, screen, None)
+                                if board.grid[row][col].has_mine:
+                                    if mine_sound:
+                                        mine_sound.play()
+                                    game_over = True
+                            elif event.button == 3:  # Clic derecho
+                                board.toggle_mark_cell(row, col)
+                                if flag_sound:
+                                    flag_sound.play()
 
-            # Actualizar el tiempo transcurrido
-            if not game_over:
-                elapsed_time = int(time.time() - start_time)
-            
-            # Verificar condición de victoria
-            if board.check_victory():
-                game_over = True
+        # Actualizar el tiempo transcurrido
+        if board is not None and not game_over:
+            current_time = pygame.time.get_ticks()
+            elapsed_time = (current_time - start_time) // 1000  # En segundos
 
-            # Dibujar el fondo
-            if background:
-                background_scaled = pygame.transform.scale(background, (WIDTH, HEIGHT))
-                screen.blit(background_scaled, (0, 0))
-            else:
-                screen.fill(PALETTE["background"])
-            
+        # Verificar condición de victoria
+        if board is not None and not game_over and board.check_victory():
+            game_over = True
+
+        # Dibujar el fondo
+        if background:
+            screen.blit(background, (0, 0))
+        else:
+            screen.fill(PALETTE["background"])
+
+        if board is None:
+            # Mostrar el menú de selección de dificultad
+            buttons = display_difficulty_menu(screen, font_large, font_medium)
+        else:
             # Dibujar el tablero y otros elementos
             draw_grid(screen, board, mine_image, flag_image, font_small)
             draw_restart_button(screen, font_small)
             draw_info(screen, board, elapsed_time, font_small)
-            
+
             # Mensajes de fin de juego
             if game_over:
                 if board.check_victory():
@@ -300,8 +286,8 @@ def main():
                     message = "¡Perdiste!"
                     color = PALETTE["defeat"]
                 render_text_with_shadow(screen, message, font_large, color, (50, 50, 50), (WIDTH // 2, HEIGHT // 2))
-            
-            pygame.display.flip()
+
+        pygame.display.flip()
 
 if __name__ == "__main__":
     main()
