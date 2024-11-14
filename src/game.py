@@ -1,6 +1,7 @@
 # src/game.py
 
 import random
+import pygame
 
 class Cell:
     def __init__(self):
@@ -62,3 +63,38 @@ class Board:
                 if not cell.has_mine and not cell.is_revealed:
                     return False
         return True
+
+    def reveal_cell_with_animation(self, row, col, screen):
+        """
+        Revela una celda con una animación de desvanecimiento usando un enfoque iterativo.
+        """
+        stack = [(row, col)]
+        REVEAL_COLOR = (180, 180, 180)  # Gris claro
+        ANIMATION_STEPS = 10
+        DELAY = 30  # Milisegundos entre cada paso de la animación
+
+        while stack:
+            current_row, current_col = stack.pop()
+            if not (0 <= current_row < self.rows and 0 <= current_col < self.cols):
+                continue  # Evita índices fuera de rango
+            cell = self.grid[current_row][current_col]
+            if cell.is_revealed or cell.is_marked:
+                continue
+            cell.is_revealed = True
+
+            rect = pygame.Rect(current_col * 40, current_row * 40 + 50, 40, 40)  # Ajusta según la interfaz
+            for i in range(1, ANIMATION_STEPS + 1):
+                alpha = int((i / ANIMATION_STEPS) * 255)
+                temp_surface = pygame.Surface((rect.width, rect.height))
+                temp_surface.set_alpha(alpha)
+                temp_surface.fill(REVEAL_COLOR)
+                screen.blit(temp_surface, rect.topleft)
+                pygame.display.flip()
+                pygame.time.delay(DELAY)
+
+            if cell.adjacent_mines == 0 and not cell.has_mine:
+                for r in range(max(0, current_row-1), min(self.rows, current_row+2)):
+                    for c in range(max(0, current_col-1), min(self.cols, current_col+2)):
+                        neighbor = self.grid[r][c]
+                        if not neighbor.is_revealed and not neighbor.has_mine:
+                            stack.append((r, c))
