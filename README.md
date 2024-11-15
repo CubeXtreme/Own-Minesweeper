@@ -55,3 +55,6 @@ Se ha añadido un nuevo botón **"Menú Principal"** en la interfaz del juego, q
 - **Botón de "Menú Principal":** Posicionado en la parte inferior central de la pantalla de juego.
 - **Funcionalidad:** Al hacer clic en el botón, el juego se reinicia y se muestra el menú de selección de dificultad.
 - **Integración:** Fácil de usar y no interfiere con las otras funcionalidades del juego.
+
+#### Added
+- **Hotfix HF001:** Soluciona el problema de carga del icono de la ventana cambiando el formato de `.ico` de `256x256` a `32x32` píxeles para asegurar compatibilidad con Pygame.
