@@ -43,3 +43,15 @@ Durante el desarrollo del juego Buscaminas en Python utilizando Pygame, hemos en
 **Conclusión:**
 
 A través de una serie de ajustes y optimizaciones, hemos logrado superar los desafíos iniciales del proyecto Buscaminas en Python. El juego ahora ofrece una experiencia de usuario más fluida y agradable, con una interfaz gráfica coherente y funcionalidades robustas. Continuaremos monitoreando el desempeño y realizando mejoras adicionales para asegurar que el juego mantenga altos estándares de calidad.
+
+## Nuevas Funcionalidades
+
+### **Volver al Menú Principal**
+
+Se ha añadido un nuevo botón **"Menú Principal"** en la interfaz del juego, que permite a los jugadores regresar al menú de selección de dificultad en cualquier momento durante una partida en curso.
+
+**Características:**
+
+- **Botón de "Menú Principal":** Posicionado en la parte inferior central de la pantalla de juego.
+- **Funcionalidad:** Al hacer clic en el botón, el juego se reinicia y se muestra el menú de selección de dificultad.
+- **Integración:** Fácil de usar y no interfiere con las otras funcionalidades del juego.
