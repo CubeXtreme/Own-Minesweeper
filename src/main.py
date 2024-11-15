@@ -14,7 +14,8 @@ PALETTE = {
     "flag": (0, 0, 255),                # Azul
     "text": (255, 255, 255),            # Blanco
     "victory": (0, 255, 0),             # Verde
-    "defeat": (255, 0, 0)               # Rojo
+    "defeat": (255, 0, 0),               # Rojo
+    "back_to_menu": (34, 139, 34)        # Verde oscuro para el nuevo botón
 }
 
 # Ruta a los recursos
@@ -35,6 +36,11 @@ DIFFICULTIES = {
 RESTART_BUTTON_RECT = pygame.Rect(0, 0, 100, 40)  # Posición dinámica
 RESTART_COLOR = (70, 130, 180)  # Azul acero
 RESTART_TEXT_COLOR = PALETTE["text"]
+
+# **NUEVO**: Definir el botón "Volver al Menú Principal
+BACK_TO_MENU_BUTTON_RECT = pygame.Rect(0, 0, 150, 40)  # Tamaño del botón
+BACK_TO_MENU_COLOR = PALETTE["back_to_menu"]  # Verde oscuro
+BACK_TO_MENU_TEXT_COLOR = PALETTE["text"]
 
 def get_remaining_mines(board):
     """Calcula las minas restantes basándose en las marcas realizadas por el jugador."""
@@ -68,6 +74,18 @@ def draw_restart_button(screen, font):
     pygame.draw.rect(screen, RESTART_COLOR, RESTART_BUTTON_RECT)
     text = font.render("Reiniciar", True, RESTART_TEXT_COLOR)
     screen.blit(text, text.get_rect(center=RESTART_BUTTON_RECT.center))
+
+# **NUEVO**: Función para dibujar el botón "Volver al Menú Principal"
+def draw_back_to_menu_button(screen, font):
+    """Dibuja el botón de 'Volver al Menú Principal' en la pantalla."""
+    # Posicionar el botón debajo del botón de reinicio
+    back_menu_x = screen.get_width() // 2 - BACK_TO_MENU_BUTTON_RECT.width // 2
+    back_menu_y = screen.get_height() - BACK_TO_MENU_BUTTON_RECT.height - 60  # 60 píxeles desde abajo
+    BACK_TO_MENU_BUTTON_RECT.topleft = (back_menu_x, back_menu_y)
+    
+    pygame.draw.rect(screen, BACK_TO_MENU_COLOR, BACK_TO_MENU_BUTTON_RECT)
+    text = font.render("Menú Principal", True, BACK_TO_MENU_TEXT_COLOR)
+    screen.blit(text, text.get_rect(center=BACK_TO_MENU_BUTTON_RECT.center))
 
 def draw_info(screen, board, elapsed_time, font):
     """Dibuja la información del juego como minas restantes y temporizador."""
@@ -234,7 +252,7 @@ def main():
                             animation_cells = []
                             break
                 else:
-                    # Manejar clics en el tablero o en el botón de reiniciar
+                    # Manejar clics en el tablero o en los botones
                     if RESTART_BUTTON_RECT.collidepoint(x, y):
                         # Reiniciar el juego con la misma dificultad
                         params = DIFFICULTIES[current_difficulty]
@@ -243,6 +261,14 @@ def main():
                         start_time = pygame.time.get_ticks()
                         elapsed_time = 0
                         animation_cells = []
+                    elif BACK_TO_MENU_BUTTON_RECT.collidepoint(x, y):
+                        # **NUEVO**: Volver al menú principal
+                        board = None
+                        game_over = False
+                        start_time = None
+                        elapsed_time = 0
+                        animation_cells = []
+                        # Opcional: Detener la música actual y reproducir otra si es necesario
                     else:
                         # Ajustar coordenadas según interfaz (50 píxeles reservados para información)
                         col = x // CELL_SIZE
@@ -286,6 +312,7 @@ def main():
             # Dibujar el tablero y otros elementos
             draw_grid(screen, board, mine_image, flag_image, font_small)
             draw_restart_button(screen, font_small)
+            draw_back_to_menu_button(screen, font_small)  # **NUEVO**: Dibujar el botón "Volver al Menú"
             draw_info(screen, board, elapsed_time, font_small)
 
             # Manejar animaciones
