@@ -28,3 +28,7 @@ Thumbs.db
 *.log
 *.bak
 *.tmp
+
+# Ignorar carpetas build y dist
+/build/
+/dist/
